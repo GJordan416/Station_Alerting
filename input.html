@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Input Alert</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Courier New', Courier, monospace;
+            background-color: black;
+            color: lime;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            align-items: center;
+        }
+
+        input[type="text"], input[type="number"] {
+            padding: 10px;
+            font-size: 1em;
+            width: 300px;
+        }
+
+        button {
+            padding: 10px;
+            font-size: 1em;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="controls">
+        <input type="text" id="alert-message" placeholder="Enter Alert Message">
+        <input type="number" id="priority-timeout" placeholder="Priority Timeout (min)" min="1">
+        <button onclick="sendAlert()">Send Alert</button>
+        <button onclick="window.location.href='index.html'">Go Back to Main Page</button>
+    </div>
+
+    <script>
+        function sendAlert() {
+            const message = document.getElementById('alert-message').value;
+            const timeout = document.getElementById('priority-timeout').value;
+            
+            if (message.trim() !== '') {
+                localStorage.setItem('alertMessage', message);
+                localStorage.setItem('priorityTimeout', timeout);
+                alert('Alert Sent!');
+                window.location.href = 'index.html'; // Redirect back to main page
+            } else {
+                alert('Please enter a message');
+            }
+        }
+    </script>
+</body>
+</html>
