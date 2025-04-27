@@ -18,9 +18,26 @@
             transition: background-color 0.5s;
         }
 
+        .priority-banner {
+            display: none;
+            width: 100%;
+            background-color: yellow;
+            color: red;
+            font-size: 3em;
+            font-weight: bold;
+            text-align: center;
+            padding: 10px;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1000;
+            animation: flash-banner 1s infinite, pulse-banner 2s infinite;
+        }
+
         .board {
             text-align: center;
             padding: 20px;
+            margin-top: 80px;
         }
 
         .time {
@@ -45,10 +62,18 @@
 
         .controls {
             display: flex;
+            flex-direction: column;
+            align-items: center;
             gap: 10px;
         }
 
-        input[type="text"] {
+        .controls-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        input[type="text"], input[type="number"] {
             padding: 10px;
             font-size: 1em;
             width: 300px;
@@ -70,6 +95,17 @@
             50% { background-color: red; }
         }
 
+        @keyframes flash-banner {
+            0%, 100% { background-color: yellow; }
+            50% { background-color: red; color: yellow; }
+        }
+
+        @keyframes pulse-banner {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
         .flashing {
             animation: flash 1s infinite;
         }
@@ -81,19 +117,26 @@
     </style>
 </head>
 <body>
+    <div id="priority-banner" class="priority-banner">PRIORITY ALERT</div>
     <div class="board">
         <div class="time" id="time">00:00:00</div>
         <div class="message">
-            <div class="scroll" id="scroll-text">STRUCT FIRE - 1523 E Apache</div>
+            <div class="scroll" id="scroll-text">Enter Alert Manually</div>
         </div>
         <div class="controls">
-            <input type="text" id="new-message" placeholder="Enter new alert...">
-            <button onclick="updateMessage()">Update Message</button>
-            <button onclick="clearPriorityMode()">Clear Priority</button>
+            <div class="controls-row">
+                <input type="text" id="new-message" placeholder="Enter new alert...">
+                <button onclick="updateMessage()">Update Message</button>
+                <button onclick="clearPriorityMode()">Clear Priority</button>
+            </div>
+            <div class="controls-row">
+                <input type="number" id="priority-timeout" placeholder="Priority Timeout (min)" min="1">
+            </div>
         </div>
     </div>
 
     <audio id="alert-sound" src="https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg" preload="auto"></audio>
+    <audio id="priority-sound" src="https://actions.google.com/sounds/v1/alarms/siren.ogg" preload="auto"></audio>
 
     <script>
         let priorityActive = false;
@@ -113,6 +156,12 @@
             sound.play();
         }
 
+        function playPrioritySound() {
+            const prioritySound = document.getElementById('priority-sound');
+            prioritySound.currentTime = 0;
+            prioritySound.play();
+        }
+
         function flashBackground(start) {
             if (priorityActive) return;
             if (start) {
@@ -126,15 +175,22 @@
             priorityActive = true;
             document.body.classList.remove('flashing');
             document.body.classList.add('priority-mode');
+            document.getElementById('priority-banner').style.display = 'block';
+            playPrioritySound();
 
             clearTimeout(priorityTimeout);
-            priorityTimeout = setTimeout(clearPriorityMode, 300000); // Auto-clear after 5 minutes
+            let timeoutInput = document.getElementById('priority-timeout').value;
+            let timeoutMinutes = parseInt(timeoutInput);
+            if (isNaN(timeoutMinutes) || timeoutMinutes <= 0) timeoutMinutes = 5;
+
+            priorityTimeout = setTimeout(clearPriorityMode, timeoutMinutes * 60000);
         }
 
         function clearPriorityMode() {
             priorityActive = false;
             document.body.classList.remove('priority-mode');
             document.body.classList.remove('flashing');
+            document.getElementById('priority-banner').style.display = 'none';
             clearTimeout(priorityTimeout);
         }
 
@@ -152,32 +208,8 @@
             }
         }
 
-        const messages = [
-            'STRUCT FIRE - 1523 E Apache',
-            'MEDICAL CALL - 4812 N Main',
-            'ALARM SOUNDING - 232 W Broadway',
-            'MVA W/ INJURIES - Hwy 67 & Maple'
-        ];
-
-        let msgIndex = 0;
-
-        function rotateMessages() {
-            if (priorityActive) return; // Don't rotate during priority
-            msgIndex = (msgIndex + 1) % messages.length;
-            const currentMessage = messages[msgIndex];
-            document.getElementById('scroll-text').textContent = currentMessage;
-            playSound();
-            if (currentMessage.toUpperCase().includes('STRUCT') || currentMessage.toUpperCase().includes('FIRE')) {
-                flashBackground(true);
-            } else {
-                flashBackground(false);
-            }
-        }
-
         setInterval(updateTime, 1000);
         updateTime();
-
-        setInterval(rotateMessages, 15000);
     </script>
 </body>
 </html>
