@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fire Station Alert Board</title>
+    <style>
+        body {
+            margin: 0;
+            background-color: black;
+            font-family: 'Courier New', Courier, monospace;
+            color: lime;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            transition: background-color 0.5s;
+        }
+
+        .board {
+            text-align: center;
+            padding: 20px;
+        }
+
+        .time {
+            font-size: 5em;
+            color: red;
+            margin-bottom: 20px;
+        }
+
+        .message {
+            font-size: 3em;
+            white-space: nowrap;
+            overflow: hidden;
+            width: 80vw;
+            margin-bottom: 20px;
+        }
+
+        .scroll {
+            display: inline-block;
+            padding-left: 100%;
+            animation: scroll 15s linear infinite;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+        }
+
+        input[type="text"] {
+            padding: 10px;
+            font-size: 1em;
+            width: 300px;
+        }
+
+        button {
+            padding: 10px;
+            font-size: 1em;
+            cursor: pointer;
+        }
+
+        @keyframes scroll {
+            0% { transform: translateX(0%); }
+            100% { transform: translateX(-100%); }
+        }
+
+        @keyframes flash {
+            0%, 100% { background-color: black; }
+            50% { background-color: red; }
+        }
+
+        .flashing {
+            animation: flash 1s infinite;
+        }
+
+        .priority-mode {
+            background-color: red !important;
+            animation: none !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="board">
+        <div class="time" id="time">00:00:00</div>
+        <div class="message">
+            <div class="scroll" id="scroll-text">STRUCT FIRE - 1523 E Apache</div>
+        </div>
+        <div class="controls">
+            <input type="text" id="new-message" placeholder="Enter new alert...">
+            <button onclick="updateMessage()">Update Message</button>
+            <button onclick="clearPriorityMode()">Clear Priority</button>
+        </div>
+    </div>
+
+    <audio id="alert-sound" src="https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg" preload="auto"></audio>
+
+    <script>
+        let priorityActive = false;
+        let priorityTimeout;
+
+        function updateTime() {
+            const now = new Date();
+            const hours = now.getHours().toString().padStart(2, '0');
+            const minutes = now.getMinutes().toString().padStart(2, '0');
+            const seconds = now.getSeconds().toString().padStart(2, '0');
+            document.getElementById('time').textContent = `${hours}:${minutes}:${seconds}`;
+        }
+
+        function playSound() {
+            const sound = document.getElementById('alert-sound');
+            sound.currentTime = 0;
+            sound.play();
+        }
+
+        function flashBackground(start) {
+            if (priorityActive) return;
+            if (start) {
+                document.body.classList.add('flashing');
+            } else {
+                document.body.classList.remove('flashing');
+            }
+        }
+
+        function activatePriorityMode() {
+            priorityActive = true;
+            document.body.classList.remove('flashing');
+            document.body.classList.add('priority-mode');
+
+            clearTimeout(priorityTimeout);
+            priorityTimeout = setTimeout(clearPriorityMode, 300000); // Auto-clear after 5 minutes
+        }
+
+        function clearPriorityMode() {
+            priorityActive = false;
+            document.body.classList.remove('priority-mode');
+            document.body.classList.remove('flashing');
+            clearTimeout(priorityTimeout);
+        }
+
+        function updateMessage() {
+            const newText = document.getElementById('new-message').value;
+            if (newText.trim() !== '') {
+                document.getElementById('scroll-text').textContent = newText;
+                document.getElementById('new-message').value = '';
+                playSound();
+                if (newText.toUpperCase().includes('STRUCT') || newText.toUpperCase().includes('FIRE')) {
+                    activatePriorityMode();
+                } else {
+                    flashBackground(false);
+                }
+            }
+        }
+
+        const messages = [
+            'STRUCT FIRE - 1523 E Apache',
+            'MEDICAL CALL - 4812 N Main',
+            'ALARM SOUNDING - 232 W Broadway',
+            'MVA W/ INJURIES - Hwy 67 & Maple'
+        ];
+
+        let msgIndex = 0;
+
+        function rotateMessages() {
+            if (priorityActive) return; // Don't rotate during priority
+            msgIndex = (msgIndex + 1) % messages.length;
+            const currentMessage = messages[msgIndex];
+            document.getElementById('scroll-text').textContent = currentMessage;
+            playSound();
+            if (currentMessage.toUpperCase().includes('STRUCT') || currentMessage.toUpperCase().includes('FIRE')) {
+                flashBackground(true);
+            } else {
+                flashBackground(false);
+            }
+        }
+
+        setInterval(updateTime, 1000);
+        updateTime();
+
+        setInterval(rotateMessages, 15000);
+    </script>
+</body>
+</html>
